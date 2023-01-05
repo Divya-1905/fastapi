@@ -1,4 +1,5 @@
-from fastapi import FastAPI,status,HTTPException,Form
+from fastapi import FastAPI,status,HTTPException,Request
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Optional,List
 from database import SessionLocal
@@ -9,6 +10,7 @@ from database import engine
 db=SessionLocal()
 app=FastAPI()
 database = engine
+templates = Jinja2Templates(directory="templates")
 class Item(BaseModel): #serializer
     id:int
     name:str
@@ -36,13 +38,13 @@ def get_all_items():
 
     return items
 
-@app.get('/accounts',response_model=account,status_code=200)
-def get_all_accounts():
+@app.get('/accounts',response_model=account,status_code=200,)
+def get_all_accounts(request:Request,id:int):
     accounts=db.query(models.accounts).filter(models.accounts.email == 'user1@gmail.com').first()
-    return accounts
+    return templates.TemplateResponse("signup.html",{"request":request,'id':id})
 
 @app.post('/signup/',response_model=account,status_code=status.HTTP_201_CREATED)
-def signup(account:account):
+def signup(account:account,request:Request):
     try:
         db_user = models.accounts(email=account.email, password= account.password,phone= account.phone,name=account.name)   
         db.add(db_user)    
@@ -54,6 +56,8 @@ def signup(account:account):
     except:
         db.rollback()
         raise {'error'}
+    # return TEMPLATES.TemplateResponse( "signup.html",{"request": request, "recipes": RECIPES},)
+     
 @app.put('/signupdate/{accounts_id}',status_code=status.HTTP_200_OK)
 def update_account(accounts_id:int,acc:account):
     acc_to_uptodate = db.query(models.accounts).get(accounts_id)
@@ -74,18 +78,7 @@ def deleteaccounts(accounts_id:int):
     db.add(acc_to_delete)
     db.delete(acc_to_delete)
     db.commit()
-    return (status.HTTP_200_OK)
-
-
-
-
-
-
-
-
-
-
-    
+    return (status.HTTP_200_OK)   
 @app.get('/item/{item_id}',response_model=Item,status_code=status.HTTP_200_OK)
 def get_an_item(item_id:int):
     item=db.query(models.Item).filter(models.Item.id==item_id).first()
