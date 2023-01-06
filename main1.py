@@ -1,4 +1,4 @@
-from fastapi import FastAPI,status,HTTPException,Request
+from fastapi import FastAPI,status,HTTPException,Request,Form
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Optional,List
@@ -6,27 +6,32 @@ from database import SessionLocal
 from models import accounts
 import models
 from database import engine
-
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 db=SessionLocal()
 app=FastAPI()
 database = engine
 templates = Jinja2Templates(directory="templates")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 class Item(BaseModel): #serializer
     id:int
     name:str
     description:Optional[str]
     price:Optional[str]
     on_offer:bool
-
+    
     class Config:
         orm_mode=True
 
-class account(BaseModel):
+class serializeraccount(BaseModel):
     id:Optional[int]
     name:Optional[str]
     email:Optional[str]
     password:Optional[str]
     phone:Optional[str]
+    # def is_valid(self):
+    #     if in not self
+
 
     class Config:
         orm_mode = True
@@ -38,28 +43,40 @@ def get_all_items():
 
     return items
 
-@app.get('/accounts',response_model=account,status_code=200,)
-def get_all_accounts(request:Request,id:int):
-    accounts=db.query(models.accounts).filter(models.accounts.email == 'user1@gmail.com').first()
-    return templates.TemplateResponse("signup.html",{"request":request,'id':id})
+@app.get('/accounts',response_model=serializeraccount,status_code=200,)
+def get_all_accounts(request:Request):
+    accounts=db.query(models.accounts).filter(models.accounts.email == 'user4@gmail.com').first()
+    # return accounts
+    # return templates.TemplateResponse( "signup.html",{"request": request,"id":accounts.id})
 
-@app.post('/signup/',response_model=account,status_code=status.HTTP_201_CREATED)
-def signup(account:account,request:Request):
+
+
+@app.get("/signup/",response_class=HTMLResponse)
+def signup(request:Request):
+      return templates.TemplateResponse( "signup.html",{"request": request})
+
+@app.post('/signup-post/',response_model=serializeraccount,status_code=status.HTTP_201_CREATED)
+def signup(request:Request,account:serializeraccount):
+    print(account)
     try:
-        db_user = models.accounts(email=account.email, password= account.password,phone= account.phone,name=account.name)   
+        print(account)
+        db_user = models.accounts(email=account.email, password= account.password,phone= account.phone,name=account.name) 
+  
         db.add(db_user)    
         db.commit()   
         db.refresh(db_user)    
-        return db_user
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=str(e))
-    except:
-        db.rollback()
-        raise {'error'}
-    # return TEMPLATES.TemplateResponse( "signup.html",{"request": request, "recipes": RECIPES},)
-     
+   
+
+
+# @app.get('signupdate/{accounts_id}',response_class=HTMLResponse)
+# def signupdate(accounts_id:int,request:Request):
+    
+
+
 @app.put('/signupdate/{accounts_id}',status_code=status.HTTP_200_OK)
-def update_account(accounts_id:int,acc:account):
+def update_account(accounts_id:int,acc:serializeraccount):
     acc_to_uptodate = db.query(models.accounts).get(accounts_id)
     acc_to_uptodate.name = acc.name
     acc_to_uptodate.email = acc.email
