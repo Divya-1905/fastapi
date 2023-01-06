@@ -37,6 +37,19 @@ class serializeraccount(BaseModel):
         orm_mode = True
 
 
+
+class postserializeraccount(BaseModel):
+    # id:Optional[int]
+    name:Optional[str]
+    email:Optional[str]
+    password:Optional[str]
+    phone:Optional[str]
+    # def is_valid(self):
+    #     if in not self
+
+
+    class Config:
+        orm_mode = True
 @app.get('/items',response_model=List[Item],status_code=200)
 def get_all_items():
     items=db.query(models.Item).all()
@@ -55,8 +68,8 @@ def get_all_accounts(request:Request):
 def signup(request:Request):
       return templates.TemplateResponse( "signup.html",{"request": request})
 
-@app.post('/signup-post/',response_model=serializeraccount,status_code=status.HTTP_201_CREATED)
-def signup(request:Request,account:serializeraccount):
+@app.post('/signup-post/',response_model=postserializeraccount,status_code=status.HTTP_201_CREATED)
+def signup(request:Request,account:postserializeraccount ):
     print(account)
     try:
         print(account)
