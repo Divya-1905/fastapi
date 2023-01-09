@@ -30,6 +30,14 @@ class accounts(Base):
     def __repr__(self) -> str:
         return self.name
 
+class profile(Base):
+    __tablename__='profile'
+    id=Column(Integer,primary_key=True)
+    name=Column(String(25),nullable=False)
+    email=Column(String(55),nullable=False,unique=True)
+    password=Column(String(200),nullable=False)
+    def __repr__(self) -> str:
+        return self.name
 
 
 

@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Optional,List
 from database import SessionLocal
-from models import accounts
+from models import accounts,Item,profile
 import models
 from database import engine
 from fastapi.staticfiles import StaticFiles
@@ -12,7 +12,7 @@ db=SessionLocal()
 app=FastAPI()
 database = engine
 templates = Jinja2Templates(directory="templates")
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 class Item(BaseModel): #serializer
     id:int
     name:str
@@ -48,8 +48,26 @@ class postserializeraccount(BaseModel):
     #     if in not self
 
 
+    # class Config:
+    #     orm_mode = True
+
+class profileserializer(BaseModel):
+    id:Optional[int]
+    name:Optional[str]
+    email:Optional[str]
+    password:Optional[str]
     class Config:
         orm_mode = True
+
+
+class profile_serializer(BaseModel):
+    id:Optional[int]
+    name:Optional[str]
+    email:Optional[str]
+    password:Optional[str]
+    class Config:
+        orm_mode = True
+
 @app.get('/items',response_model=List[Item],status_code=200)
 def get_all_items():
     items=db.query(models.Item).all()
@@ -74,12 +92,13 @@ def signup(request:Request,account:postserializeraccount ):
     try:
         print(account)
         db_user = models.accounts(email=account.email, password= account.password,phone= account.phone,name=account.name) 
-  
+        print(db_user)
         db.add(db_user)    
         db.commit()   
         db.refresh(db_user)    
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=str(e))
+        return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=str(e))
+    return templates.TemplateResponse('signup.html',{"request":request})    
    
 
 
@@ -156,5 +175,31 @@ def delete_item(item_id:int):
 
     return item_to_delete
 
+@app.get('/profile',response_model=profileserializer,status_code=status.HTTP_200_OK)
+def profile_all_get(self):
+    profile = db.query(models=profile).all()
+    return profile
+# @app.post('/post-profile/',response_model=profileserializer,status_code=status.HTTP_201_CREATED)
+# def post_profile(request:Request,profile:profile_serializer):
+#     try:
+#         profile = models.profile(name=profile.name,email = profile.email,password = profile.password)
+#     except:
+#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+# @app.put('/profile/{profile_id}',response_model=profileserializer,status_code=status)
+# def put_profile(profile_id:int,profile:profile_serializer):
+#     profile_update= db.query(models.profile).filter(models.profile.id==profile.id).first()
+#     profile_update.name=profile.name
+#     profile_update.email=profile.email
+#     profile_update.password=profile.password
+#     db.commit()
+#     return profile_update
+# @app.delete('/profile/{profile_id}') 
+# def delete_profile(profile_id:int):
+#     profile_delete= db.query(models.profile).filter(models.profile.id==profile_id).first()
+#     if profile_delete is None:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Resource Not Found")    
+#     db.delete(profile_delete)
+#     db.commit()
+#     return profile_delete   
+    

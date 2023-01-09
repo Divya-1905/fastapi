@@ -1,5 +1,5 @@
 from database import Base,engine
-from models import Item,accounts
+from models import Item,accounts,profile
 
 print("Creating database ....")
 
